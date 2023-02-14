@@ -11,11 +11,18 @@ df = pd.read_csv(
 
 df_slim = df.sample(20)
 
-list_of_cols = ['player_name', 'ftm', 'fta']
+playtime_fields = ['player_name', 'gp', 'min']
+playtime = df_slim[playtime_fields]
+playtime.columns = ['player', 'games_played', 'minutes']
 
-print(df_slim[list_of_cols])
+# df_slim['ppg'] = round((df_slim['pts'] / df_slim['gp']), 1)
+# df_slim.insert(3, column='league', value='NBA')
+# del df_slim['ppg']
+
+# print(df_slim[list_of_cols])
 # print(list(df_slim))
 # print(df_slim)
+print(playtime)
 # print(df.corr())
 # print(df.info())
 # print(df.describe())

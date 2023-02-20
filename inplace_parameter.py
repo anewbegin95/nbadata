@@ -3,7 +3,7 @@
 # The default setting is False, which is often why we see people use the same variable
 
 import pandas as pd
-df = pd.read_csv('nbadata/nba-stats-csv/player_stats_total.csv')
+df = pd.read_csv('./nba-stats-csv/player_stats_total.csv')
 
 df_slim = df.sample(15)
 df_slim.sort_values('gp')

@@ -54,6 +54,8 @@ sample_concat = pd.concat([df_1, df_2], ignore_index=True)
 
 ## Earlier, we looked at the append method. This is the same, but
 ## it's called directly on a dataframe object. We don't call a list
-## but call the command directly on the dataframe itself.
+## but call the command directly on the dataframe itself. Append has
+## the same index issues that concat has, so be sure to reset your 
+## index as needed.
 appended = df_1.append(df_2, ignore_index = True)
 print(appended)

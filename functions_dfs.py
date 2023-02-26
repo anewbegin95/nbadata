@@ -33,7 +33,7 @@ player_stats = {
     ,'season_id' : ['2017-18', '2017-18', '2017-18', '2017-18', '2017-18']
     ,'total_points' : [1251, 927, 765, 1346, 1734]
     ,'games_played' : [82, 77, 81, 51, 79]
-    }
+}
 df = pd.DataFrame(player_stats)
 
 def ppg(row):
@@ -63,5 +63,6 @@ player = df.groupby(['player_id', 'player_name'])
 # print(player)
 player_career_fts = player['ftm', 'fta'].sum()
 player_career_fts['ft_pct'] = player_career_fts.apply(ft_pct, axis = 1)
-player_career_fts.sort_values('fta', inplace = True ,ascending = False).reset_index(inplace = True)
+player_career_fts.sort_values('fta', inplace = True ,ascending = False)
+player_career_fts.reset_index(inplace = True)
 print(player_career_fts)

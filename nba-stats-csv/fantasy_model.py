@@ -83,10 +83,10 @@ def normalize_df(df):
 df_normalized = grouped_df = df_no_outliers.groupby(
     ['season_id'], group_keys=True).apply(normalize_df)
 
-# Now, we need to calculate player distance. This is also referred to as percent error, and shares how close players' 
+# Now, we need to calculate player distance. This is also referred to as percent error, and shares how close players'
 # stats are. Our goal is to find the ten players with the shortest distance across all stats.
 # We'll create a function called called calc_distance that takes two players as inputs and outputs their distance.
-# To measure distance, we're going to use the euclidian distance between two points. This measures the length of the 
+# To measure distance, we're going to use the euclidian distance between two points. This measures the length of the
 # distance between the two points. We can caluclate this with the square root function.
 
 
@@ -94,25 +94,31 @@ def calc_distance(u, v):
     dist = np.sqrt(np.sum((u - v) ** 2))
     return dist
 
+
 # First we'll test two players and see how our function works. Let's join our df_normalized with a df
 # with names to see names.
-df_player_names = pd.read_csv('nbadata/nba-stats-csv/player_id_player_name.csv')
-df_normalized = pd.merge(df_normalized, df_player_names, on = 'player_id', how='left')
+df_player_names = pd.read_csv(
+    'nbadata/nba-stats-csv/player_id_player_name.csv')
+df_normalized = pd.merge(df_normalized, df_player_names,
+                         on='player_id', how='left')
 col_list = df_normalized.columns.tolist()
 col_list = col_list[0:1] + col_list[-1:] + col_list[1:-1]
 df_normalized = df_normalized[col_list]
 
-## Let's experiment by getting just Damien Lillard, Steph Curry, and The Stifle Tower in 2017-18
+# Let's experiment by getting just Damien Lillard, Steph Curry, and The Stifle Tower in 2017-18
 some_players_list = ['Steph Curry', 'Damian Lillard', 'Rudy Gobert']
-dame_2019 = df_normalized[(df_normalized['player_name'] == 'Damian Lillard') & (df_normalized['season_id'] == '2018-19')] 
-steph_2019 = df_normalized[(df_normalized['player_name'] == 'Stephen Curry') & (df_normalized['season_id'] == '2018-19')] 
-stifle_2019 = df_normalized[(df_normalized['player_name'] == 'Rudy Gobert') & (df_normalized['season_id'] == '2018-19')] 
+dame_2019 = df_normalized[(df_normalized['player_name'] == 'Damian Lillard') & (
+    df_normalized['season_id'] == '2018-19')]
+steph_2019 = df_normalized[(df_normalized['player_name'] == 'Stephen Curry') & (
+    df_normalized['season_id'] == '2018-19')]
+stifle_2019 = df_normalized[(df_normalized['player_name'] == 'Rudy Gobert') & (
+    df_normalized['season_id'] == '2018-19')]
 dame_2019_ppg = dame_2019.pts.tolist()[0]
 steph_2019_ppg = steph_2019.pts.tolist()[0]
 stifle_2019_ppg = stifle_2019.pts.tolist()[0]
-print(calc_distance(dame_2019_ppg, steph_2019_ppg))
+# print(calc_distance(dame_2019_ppg, steph_2019_ppg))
 
-## Another funciton we need to create is one that finds a row of data based on a player id and season id. To find this data, 
+# Another funciton we need to create is one that finds a row of data based on a player id and season id. To find this data,
 # we need to iterate over the df until we find the row.
 
 
@@ -121,4 +127,34 @@ def find_player(input_df, player_id, player_season):
         if player_season == row.season_id and player_id == row.player_id:
             return row
 
-print(find_player(df_normalized, 2544, '2012-13'))
+
+# We need to be able to use our functions to find players with similar seasons. We're going to take stats from two players and put
+# them in arrays. Then we'll use our calc distance to compare them and get a single value. This means we'll compare every single
+# player's season against each player's season. We're going to use Jrue Holiday in 2016-17 as our test.
+current_player = 201950
+current_season = '2016-17'
+jrue_2016_17_vector = np.array([
+    (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'pts_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'min_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fgm_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fga_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fg3m_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fg3a_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'ftm_norm']).item(
+    ), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fta_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'oreb_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'dreb_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'ast_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'stl_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'tov_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'blk_norm']).item()
+])
+print(jrue_2016_17_vector)
+
+# We'll compare to Michael Kidd-Gilchrist in 2013-2014
+current_player = 203077
+current_season = '2013-14'
+mkg_2013_14_vector = np.array([
+    (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'pts_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'min_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fgm_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fga_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fg3m_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fg3a_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'ftm_norm']).item(
+    ), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fta_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'oreb_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'dreb_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'ast_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'stl_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'tov_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'blk_norm']).item()
+])
+print(mkg_2013_14_vector)
+
+# Now let's use the calc distance function for these two arrays. First we need to vectorize the function. This purpose is to
+# transform this funciton into one that can return numpy arrays. Currently, the funciton takes floats as inputs, which can't
+# be accepted in np lists
+calc_distance_vector = np.vectorize(calc_distance)
+distance_vector = calc_distance_vector(jrue_2016_17_vector, mkg_2013_14_vector)
+print(distance_vector)
+
+# Finally, we'll calculate the average percent error by dividing the sum total of the absolute difference by the number of cols.
+avg_pct_error = np.sum(abs(distance_vector)) / len(distance_vector)
+print(avg_pct_error)

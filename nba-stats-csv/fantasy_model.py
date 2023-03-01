@@ -111,3 +111,14 @@ dame_2019_ppg = dame_2019.pts.tolist()[0]
 steph_2019_ppg = steph_2019.pts.tolist()[0]
 stifle_2019_ppg = stifle_2019.pts.tolist()[0]
 print(calc_distance(dame_2019_ppg, steph_2019_ppg))
+
+## Another funciton we need to create is one that finds a row of data based on a player id and season id. To find this data, 
+# we need to iterate over the df until we find the row.
+
+
+def find_player(input_df, player_id, player_season):
+    for row in input_df.itertuples():
+        if player_season == row.season_id and player_id == row.player_id:
+            return row
+
+print(find_player(df_normalized, 2544, '2012-13'))

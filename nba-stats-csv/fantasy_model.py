@@ -98,25 +98,14 @@ def calc_distance(u, v):
 # First we'll test two players and see how our function works. Let's join our df_normalized with a df
 # with names to see names.
 df_player_names = pd.read_csv(
-    'nbadata/nba-stats-csv/player_id_player_name.csv')
+    'nbadata/nba-stats-csv/player_info.csv')
+df_normalized.reset_index(drop = True, inplace = True)
+df_player_names.reset_index(drop = True, inplace = True)
 df_normalized = pd.merge(df_normalized, df_player_names,
-                         on='player_id', how='left')
+                         on=['player_id', 'season_id'], how='left').drop_duplicates()
 col_list = df_normalized.columns.tolist()
 col_list = col_list[0:1] + col_list[-1:] + col_list[1:-1]
 df_normalized = df_normalized[col_list]
-
-# Let's experiment by getting just Damien Lillard, Steph Curry, and The Stifle Tower in 2017-18
-some_players_list = ['Steph Curry', 'Damian Lillard', 'Rudy Gobert']
-dame_2019 = df_normalized[(df_normalized['player_name'] == 'Damian Lillard') & (
-    df_normalized['season_id'] == '2018-19')]
-steph_2019 = df_normalized[(df_normalized['player_name'] == 'Stephen Curry') & (
-    df_normalized['season_id'] == '2018-19')]
-stifle_2019 = df_normalized[(df_normalized['player_name'] == 'Rudy Gobert') & (
-    df_normalized['season_id'] == '2018-19')]
-dame_2019_ppg = dame_2019.pts.tolist()[0]
-steph_2019_ppg = steph_2019.pts.tolist()[0]
-stifle_2019_ppg = stifle_2019.pts.tolist()[0]
-# print(calc_distance(dame_2019_ppg, steph_2019_ppg))
 
 # Another funciton we need to create is one that finds a row of data based on a player id and season id. To find this data,
 # we need to iterate over the df until we find the row.
@@ -130,15 +119,7 @@ def find_player(input_df, player_id, player_season):
 
 # We need to be able to use our functions to find players with similar seasons. We're going to take stats from two players and put
 # them in arrays. Then we'll use our calc distance to compare them and get a single value. This means we'll compare every single
-# player's season against each player's season. We're going to use Jrue Holiday in 2016-17 as our test.
-current_player = 201950
-current_season = '2016-17'
-jrue_2016_17_vector = np.array([
-    (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'pts_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'min_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fgm_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fga_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fg3m_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fg3a_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'ftm_norm']).item(
-    ), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fta_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'oreb_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'dreb_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'ast_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'stl_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'tov_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'blk_norm']).item()
-])
-print(jrue_2016_17_vector)
-
+# player's season against each player's season.
 # We'll compare to Michael Kidd-Gilchrist in 2013-2014
 current_player = 203077
 current_season = '2013-14'
@@ -146,15 +127,79 @@ mkg_2013_14_vector = np.array([
     (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'pts_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'min_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fgm_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fga_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fg3m_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fg3a_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'ftm_norm']).item(
     ), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fta_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'oreb_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'dreb_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'ast_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'stl_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'tov_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'blk_norm']).item()
 ])
-print(mkg_2013_14_vector)
+# print(mkg_2013_14_vector)
+
+# We're going to use Jrue Holiday in 2016-17 as our test.
+current_player = 201950
+current_season = '2016-17'
+current_player_vector = np.array([
+    (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'pts_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'min_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fgm_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fga_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fg3m_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fg3a_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'ftm_norm']).item(
+    ), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'fta_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'oreb_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'dreb_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'ast_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'stl_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'tov_norm']).item(), (df_normalized.loc[(df_normalized['player_id'] == current_player) & (df_normalized['season_id'] == current_season), 'blk_norm']).item()
+])
+# print(jrue_2016_17_vector)
 
 # Now let's use the calc distance function for these two arrays. First we need to vectorize the function. This purpose is to
 # transform this funciton into one that can return numpy arrays. Currently, the funciton takes floats as inputs, which can't
 # be accepted in np lists
 calc_distance_vector = np.vectorize(calc_distance)
-distance_vector = calc_distance_vector(jrue_2016_17_vector, mkg_2013_14_vector)
-print(distance_vector)
+distance_vector = calc_distance_vector(current_player_vector, mkg_2013_14_vector)
+# print(distance_vector)
 
 # Finally, we'll calculate the average percent error by dividing the sum total of the absolute difference by the number of cols.
 avg_pct_error = np.sum(abs(distance_vector)) / len(distance_vector)
-print(avg_pct_error)
+# print(avg_pct_error)
+
+# Now that we have an approach for comparing two players, we can turn this into a for loop and compare multiple plaeyers.
+# Let's create an empty list with the distance numbers and append them one at a time as we loop through.
+player_distance = []
+df_sample = df_normalized.sample(10)
+
+# Loop over rows in a dataframe with itertuples method.
+for row in df_sample.itertuples():
+    compared_player_vector = np.array([
+        row.pts_norm
+        ,row.min_norm
+        ,row.fgm_norm
+        ,row.fga_norm
+        ,row.fg3m_norm
+        ,row.fg3a_norm
+        ,row.ftm_norm
+        ,row.fta_norm
+        ,row.oreb_norm
+        ,row.dreb_norm
+        ,row.ast_norm
+        ,row.stl_norm
+        ,row.tov_norm
+        ,row.blk_norm
+    ])
+
+    calc_distance_vector = np.vectorize(calc_distance)
+    distance_vector =  calc_distance_vector(current_player_vector, compared_player_vector)
+    avg_pct_error = np.sum(abs(distance_vector)) / len(distance_vector)
+    player_distance.append(avg_pct_error)
+    player = row.player_name
+    # print('Done with ' + str(player) + '. Percent error was ' + str((round((1 - avg_pct_error), 3) * 100)) + '%.')
+
+df_sample['ranking'] = player_distance
+df_ranked = df_sample.sort_values('ranking')
+# print(df_ranked)
+
+# Now that we can compare seasons and sort on player error, we can find the ten players with the
+# most similar seasons to a single player. Now we need to look at the next season for those ten
+# players, average that following season together, and use that to project our selected player's
+# next season. 
+
+# The average we're taking will be a weighted average. If one of the 10 players had a small distance,
+# indicating similar player behavior, we'll weight that number heavier. We'll add logic to also
+# weight for the same player.
+
+# First, we need a list of every season id
+seasons_list = df_normalized['season_id'].unique().tolist()
+season_id = '2014-15'
+next_season = seasons_list[(seasons_list.index(season_id) + 1)]
+
+df_ranked.reset_index(drop = True, inplace = True)
+test_df = df_ranked.iloc[0]
+weight = (1 / test_df.ranking)
+print(weight)
+# stopped at 6:21 in https://www.youtube.com/watch?v=Rw5uovsJ2Zc&list=PLcYAiF7x5VfA-YUs__8nEIV_p9eKV8OqC&index=45

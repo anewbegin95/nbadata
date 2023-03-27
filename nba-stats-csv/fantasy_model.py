@@ -1,6 +1,6 @@
 """
-This model will be inspired by a few things, including k nearest neighbors (KNN) and factor-adjusted team similarites (FATS) from NBA math.
-We'll implement a manual model to find similar players.
+This model will be inspired by a few things, including k nearest neighbors (KNN) and factor-adjusted team similarites (FATS)
+ from NBA math. We'll implement a manual model to find similar players.
 Steps in this model:
     1. Normalize data acorss seasons
     2. Find the 10 most similar player seasons historically
@@ -8,12 +8,13 @@ Steps in this model:
     4. Look at 10 players following season's stats
     5. Use weighted averages to predict current players next season
     6. Rinse and repeat for every player in 2017 - 2018
-Normalizing is crucial because averages change over time, and we want to know how similar players are to those averages. We want to look at
-statistic strength compared to the league as a whole. Changes can be minor year-to-year, but very different over long spans of time.
+Normalizing is crucial because averages change over time, and we want to know how similar players are to those averages. We want
+ to look at statistic strength compared to the league as a whole. Changes can be minor year-to-year, but very different over long 
+ spans of time.
 
-To make things simple, we'll come up with one statistic called percent error to see how similar players are to each other. Meant to measure
-distance in statistics between numbers. Only distance will matter in this comparison. We may not want to weight stats the same (i.e.: blocks
-may not be weighted as highly as points)
+To make things simple, we'll come up with one statistic called percent error to see how similar players are to each other. Meant
+ to measure distance in statistics between numbers. Only distance will matter in this comparison. We may not want to weight stats
+   the same (i.e.: blocks may not be weighted as highly as points)
 """
 
 # Import modules
@@ -21,28 +22,22 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Make a list of all the statistics we'll be looking at.
-# These are all of the columns that we use for scoring in daily / weekly matchup.
+# Make a list of all of the columns that we use for scoring in daily / weekly matchup.
+# There are two types of NBA fantasy leagues, but they take these statistics into consideration the same way.
 stats = [
     'pts', 'min', 'fgm', 'fga', 'fg3m', 'fg3a', 'ftm', 'fta', 'oreb', 'dreb', 'ast', 'stl', 'tov', 'blk'
 ]
 
-# There are two types of NBA fantasy leagues, but they take these statistics into consideration the same way.
-
-# Read in files and clean them.
-# We're going to use per season stats since they account for injury time outages better than per game.
+# Read in per season stats, which account for injury time outages better than per game stats, and scrub them.
 csv = 'nbadata/nba-stats-csv/player_general_traditional_per_game_data.csv'
 df = pd.read_csv(
     csv, header=0
 )
 
-# Clean up data by dropping rows with missing values
+# Drop null value rows
 df_cleaned = df.dropna(how='all')
 
-# Remove outliers; rows of data that are going to skew averages.
-# Specifically, we want to drop players who don't play much who are going to reduce our averages.
-# print(df_cleaned['gp'].describe())
-
+# Remove outliers, specifically players who don't play much who are going to reduce our averages.
 # Mean games played is 52.63 and std is 25.12. We can calculate the min games played to make it into model.
 min_gp = df_cleaned['gp'].mean() - (df_cleaned['gp'].std() * 3)
 # print(min_gp)
@@ -56,20 +51,20 @@ min_gp = 10
 df_no_outliers = df_cleaned[df_cleaned['gp'] > min_gp]
 # print(df_cleaned['player_id'].count(), df_filter['player_id'].count())
 
-# Now it's time to normalize our data.
-# Scoring 22 ppg in 1993 isn't the same as scoring 22 ppg in 2023. There have been more attempts and higher
-# accuracy plus more adoption of three pointers, leading to more scoring. In order to compare across seasons,
-# we need to normalize data to compare between decades. What we want is a funciton that factors min and max
-# values from each season and normalizes all stats from all seasons.
-# Let's normalize points in a new col. We're going to take the value, subtract the minumum value, and divide
-# by difference between max and min values, and let's do it as a function.
+"""
+We need to normalize our data. Scoring 22 ppg in 1993 isn't the same as scoring 22 ppg in 2023. The modern NBA features more attempts
+ per game and higher rates of accuracy. Additionally, the introduction and wide-spread adoption of the three point shot has increased 
+ scoring over time. In order to compare across seasons, we need to normalize data to compare performance fairly. We're going to 
+ create a column that takes the a raw statistical value, subtracts the minumum value from that season, and divides by difference
+ between max and min values from that season to normalize the stat.
+"""
 
 
 def normalize_col(col):
     normalized_input = (col - col.min()) / (col.max() - col.min())
     return normalized_input
 
-# Now let's iterate through all our stats and normalize them. We can do this as a function, too.
+# Create a new function which calls normalize_col and iterates through a dataframe
 
 
 def normalize_df(df):
@@ -78,36 +73,36 @@ def normalize_df(df):
     return df
 
 
-# Finally, we need to do this for each season, which can be tricky to pick out the mean, min, and max for each season.
-# Let's group by season_id and then run function.
+# Create a grouped df grouped by season_id to run our function on 
 df_normalized = grouped_df = df_no_outliers.groupby(
     ['season_id'], group_keys=True).apply(normalize_df)
-
-# Now, we need to calculate player distance. This is also referred to as percent error, and shares how close players'
-# stats are. Our goal is to find the ten players with the shortest distance across all stats.
-# We'll create a function called called calc_distance that takes two players as inputs and outputs their distance.
-# To measure distance, we're going to use the euclidian distance between two points. This measures the length of the
-# distance between the two points. We can caluclate this with the square root function.
-
+"""
+We need to calculate player distance, or percent error. This metric shows how close players' normalized stats are. Our goal is to
+ find the ten players with the shortest distance across all stats. We'll create a function called called calc_distance that takes 
+ two players as inputs and outputs their distance. To measure distance, we're going to use the euclidian distance between two 
+ points. This measures the length of the distance between the two points. We can caluclate this with the square root function.
+"""
 
 def calc_distance(u, v):
     dist = np.sqrt(np.sum((u - v) ** 2))
     return dist
 
 
-# First we'll test two players and see how our function works. Let's join our df_normalized with a df
-# with names to see names.
+# Test two players and see how our function works
 df_player_names = pd.read_csv(
     'nbadata/nba-stats-csv/player_info.csv')
-df_normalized.reset_index(drop = True, inplace = True)
-df_player_names.reset_index(drop = True, inplace = True)
+# Join the df_normalized with a df with names to see names
+df_normalized.reset_index(drop=True, inplace=True)
+df_player_names.reset_index(drop=True, inplace=True)
 df_normalized = pd.merge(df_normalized, df_player_names,
                          on=['player_id', 'season_id'], how='left').drop_duplicates()
+
+# Move player_name toward the beginning of the dataframe
 col_list = df_normalized.columns.tolist()
 col_list = col_list[0:1] + col_list[-1:] + col_list[1:-1]
 df_normalized = df_normalized[col_list]
 
-# Another funciton we need to create is one that finds a row of data based on a player id and season id. To find this data,
+# Another function we need to create is one that finds a row of data based on a player id and season id. To find this data,
 # we need to iterate over the df until we find the row.
 
 
@@ -142,7 +137,8 @@ current_player_vector = np.array([
 # transform this funciton into one that can return numpy arrays. Currently, the funciton takes floats as inputs, which can't
 # be accepted in np lists
 calc_distance_vector = np.vectorize(calc_distance)
-distance_vector = calc_distance_vector(current_player_vector, mkg_2013_14_vector)
+distance_vector = calc_distance_vector(
+    current_player_vector, mkg_2013_14_vector)
 # print(distance_vector)
 
 # Finally, we'll calculate the average percent error by dividing the sum total of the absolute difference by the number of cols.
@@ -157,24 +153,12 @@ df_sample = df_normalized.sample(10)
 # Loop over rows in a dataframe with itertuples method.
 for row in df_sample.itertuples():
     compared_player_vector = np.array([
-        row.pts_norm
-        ,row.min_norm
-        ,row.fgm_norm
-        ,row.fga_norm
-        ,row.fg3m_norm
-        ,row.fg3a_norm
-        ,row.ftm_norm
-        ,row.fta_norm
-        ,row.oreb_norm
-        ,row.dreb_norm
-        ,row.ast_norm
-        ,row.stl_norm
-        ,row.tov_norm
-        ,row.blk_norm
+        row.pts_norm, row.min_norm, row.fgm_norm, row.fga_norm, row.fg3m_norm, row.fg3a_norm, row.ftm_norm, row.fta_norm, row.oreb_norm, row.dreb_norm, row.ast_norm, row.stl_norm, row.tov_norm, row.blk_norm
     ])
 
     calc_distance_vector = np.vectorize(calc_distance)
-    distance_vector =  calc_distance_vector(current_player_vector, compared_player_vector)
+    distance_vector = calc_distance_vector(
+        current_player_vector, compared_player_vector)
     avg_pct_error = np.sum(abs(distance_vector)) / len(distance_vector)
     player_distance.append(avg_pct_error)
     player = row.player_name
@@ -187,7 +171,7 @@ df_ranked = df_sample.sort_values('ranking')
 # Now that we can compare seasons and sort on player error, we can find the ten players with the
 # most similar seasons to a single player. Now we need to look at the next season for those ten
 # players, average that following season together, and use that to project our selected player's
-# next season. 
+# next season.
 
 # The average we're taking will be a weighted average. If one of the 10 players had a small distance,
 # indicating similar player behavior, we'll weight that number heavier. We'll add logic to also
@@ -198,8 +182,9 @@ seasons_list = df_normalized['season_id'].unique().tolist()
 season_id = '2014-15'
 next_season = seasons_list[(seasons_list.index(season_id) + 1)]
 
-df_ranked.reset_index(drop = True, inplace = True)
+df_ranked.reset_index(drop=True, inplace=True)
 test_df = df_ranked.iloc[0]
 weight = (1 / test_df.ranking)
 print(weight)
-# stopped at 6:21 in https://www.youtube.com/watch?v=Rw5uovsJ2Zc&list=PLcYAiF7x5VfA-YUs__8nEIV_p9eKV8OqC&index=45
+
+# List columns to loop over in for loop

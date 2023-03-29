@@ -179,12 +179,20 @@ df_ranked = df_sample.sort_values('ranking')
 
 # First, we need a list of every season id
 seasons_list = df_normalized['season_id'].unique().tolist()
-season_id = '2014-15'
-next_season = seasons_list[(seasons_list.index(season_id) + 1)]
 
 df_ranked.reset_index(drop=True, inplace=True)
-test_df = df_ranked.iloc[0]
-weight = (1 / test_df.ranking)
-print(weight)
 
-# List columns to loop over in for loop
+# For loop to go over each stat, multipy value by weight, and get weighted avg
+projected_stats_dict = {}
+
+for col in stats:
+    sum_stat = 0
+    sum_weight = 0
+    for index, row in df_ranked.iterrows():
+        weight = (1 / row.ranking)
+        sum_stat += row.pts + weight
+        sum_weight += weight
+    projected_stats_dict['player_id'] = current_player
+    projected_stats_dict['proj_season_id'] = seasons_list[(seasons_list.index(current_season) + 1)]
+    projected_stats_dict['proj_' + col] = (sum_stat / sum_weight)
+print(projected_stats_dict)

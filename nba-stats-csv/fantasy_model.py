@@ -148,10 +148,9 @@ avg_pct_error = np.sum(abs(distance_vector)) / len(distance_vector)
 # Now that we have an approach for comparing two players, we can turn this into a for loop and compare multiple plaeyers.
 # Let's create an empty list with the distance numbers and append them one at a time as we loop through.
 player_distance = []
-df_sample = df_normalized.sample(10)
 
 # Loop over rows in a dataframe with itertuples method.
-for row in df_sample.itertuples():
+for row in df_normalized.itertuples():
     compared_player_vector = np.array([
         row.pts_norm, row.min_norm, row.fgm_norm, row.fga_norm, row.fg3m_norm, row.fg3a_norm, row.ftm_norm, row.fta_norm, row.oreb_norm, row.dreb_norm, row.ast_norm, row.stl_norm, row.tov_norm, row.blk_norm
     ])
@@ -164,8 +163,9 @@ for row in df_sample.itertuples():
     player = row.player_name
     # print('Done with ' + str(player) + '. Percent error was ' + str((round((1 - avg_pct_error), 3) * 100)) + '%.')
 
-df_sample['ranking'] = player_distance
-df_ranked = df_sample.sort_values('ranking')
+df_normalized['ranking'] = player_distance
+df_ranked = df_normalized.sort_values('ranking', ascending=True)
+df_ranked.reset_index(drop=True, inplace=True)
 # print(df_ranked)
 
 # Now that we can compare seasons and sort on player error, we can find the ten players with the
@@ -179,8 +179,7 @@ df_ranked = df_sample.sort_values('ranking')
 
 # First, we need a list of every season id
 seasons_list = df_normalized['season_id'].unique().tolist()
-
-df_ranked.reset_index(drop=True, inplace=True)
+# print(seasons_list)
 
 # For loop to go over each stat, multipy value by weight, and get weighted avg
 projected_stats_dict = {}
@@ -188,11 +187,86 @@ projected_stats_dict = {}
 for col in stats:
     sum_stat = 0
     sum_weight = 0
-    for index, row in df_ranked.iterrows():
+    for index, row in df_ranked[1:11].iterrows():
+        if row.season_id == '2017-18':
+            continue
+        if row.season_id == '2018-19':
+            continue
         weight = (1 / row.ranking)
-        sum_stat += row.pts + weight
+        next_season_id = seasons_list[(seasons_list.index(row.season_id) + 1)]
+        if next_season_id == None:
+            continue
+        player_next_season = find_player(df_ranked, row.player_id, next_season_id)
+        if player_next_season == None:
+            continue
+        sum_stat += getattr(player_next_season, col) * weight
         sum_weight += weight
-    projected_stats_dict['player_id'] = current_player
     projected_stats_dict['proj_season_id'] = seasons_list[(seasons_list.index(current_season) + 1)]
     projected_stats_dict['proj_' + col] = (sum_stat / sum_weight)
 print(projected_stats_dict)
+
+"""
+Create player comparison function that takes a dataframe, a current player id, and a season,
+and outputs projected stats for player's next season. Then, loop over every player in draft to get
+their projected stats for next season. Compare to actuals to see accuracy.
+"""
+
+def player_comparison(df, current_player_season, current_player_id):
+    # If player doesn't exist in dataframe, print that player can't be found
+    if ((df['season_id'] == current_player_season)  & (df['player_id'] == current_player_id)).any(False):
+        print('Can\'t find player with id {} and season {}'.format(current_player_id, current_player_season))
+        return
+    
+    for row in df.itertuples():
+        if current_player_season == row['season_id'] and current_player_id == row['player_id']:
+            current_player_id = row.player_id
+            break
+
+    current_player_vector = np.array([df
+        (df.loc[(df['player_id'] == current_player_id) & (df['season_id'] == current_player_season), 'pts_norm']).item(), (df.loc[(df['player_id'] == current_player_id) & (df['season_id'] == current_player_season), 'min_norm']).item(), (df.loc[(df['player_id'] == current_player_id) & (df['season_id'] == current_player_season), 'fgm_norm']).item(), (df.loc[(df['player_id'] == current_player_id) & (df['season_id'] == current_player_season), 'fga_norm']).item(), (df.loc[(df['player_id'] == current_player_id) & (df['season_id'] == current_player_season), 'fg3m_norm']).item(), (df.loc[(df['player_id'] == current_player_id) & (df['season_id'] == current_player_season), 'fg3a_norm']).item(), (df.loc[(df['player_id'] == current_player_id) & (df['season_id'] == current_player_season), 'ftm_norm']).item(
+        ), (df.loc[(df['player_id'] == current_player_id) & (df['season_id'] == current_player_season), 'fta_norm']).item(), (df.loc[(df['player_id'] == current_player_id) & (df_normalized['season_id'] == current_player_season), 'oreb_norm']).item(), (df.loc[(df['player_id'] == current_player_id) & (df['season_id'] == current_player_season), 'dreb_norm']).item(), (df.loc[(df['player_id'] == current_player_id) & (df['season_id'] == current_player_season), 'ast_norm']).item(), (df.loc[(df['player_id'] == current_player_id) & (df['season_id'] == current_player_season), 'stl_norm']).item(), (df.loc[(df['player_id'] == current_player_id) & (df['season_id'] == current_player_season), 'tov_norm']).item(), (df.loc[(df['player_id'] == current_player_id) & (df['season_id'] == current_player_season), 'blk_norm']).item()
+    ])
+    print('Projecting player_id {0} for season {1}'.format(current_player_id, seasons_list[(seasons_list.index(row.season_id) + 1)]))
+    
+    player_distance = []
+
+    for row in df.itertuples():
+        compared_player_vector = np.array([
+            row.pts_norm, row.min_norm, row.fgm_norm, row.fga_norm, row.fg3m_norm, row.fg3a_norm, row.ftm_norm, row.fta_norm, row.oreb_norm, row.dreb_norm, row.ast_norm, row.stl_norm, row.tov_norm, row.blk_norm
+        ])
+        
+        calc_distance_vector = np.vectorize(calc_distance)
+        distance_vector = calc_distance_vector(
+            current_player_vector, compared_player_vector)
+        avg_pct_error = np.sum(abs(distance_vector)) / len(distance_vector)
+        player_distance.append(avg_pct_error)
+    
+    df['ranking'] = player_distance
+
+    df_ranked = df.sort_values('distance')
+
+    df_ranked.reset_index(drop=True, inplace=True)
+
+    stats = [
+        'pts', 'min', 'fgm', 'fga', 'fg3m', 'fg3a', 'ftm', 'fta', 'oreb', 'dreb', 'ast', 'stl', 'tov', 'blk'
+    ]
+
+    projected_stats_dict = {}
+
+    for col in stats:
+        sum_stat = 0
+        sum_weight = 0
+        for index, row in df_ranked[1:11].iterrows():
+            if row.season_id == '2018-19':
+                continue
+            weight = (1 / row.ranking)
+            next_season_id = seasons_list[(seasons_list.index(row.season_id) + 1)]
+            player_next_season = find_player(df_ranked, row.player_id, next_season_id)
+            if player_next_season == None:
+                continue
+            sum_stat += getattr(player_next_season, col) * weight
+            sum_weight += weight
+        projected_stats_dict['proj_season_id'] = seasons_list[(seasons_list.index(current_season) + 1)]
+        projected_stats_dict['proj_' + col] = (sum_stat / sum_weight)
+
+    return projected_stats
